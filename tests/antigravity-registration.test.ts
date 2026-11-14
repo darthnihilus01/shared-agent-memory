@@ -130,3 +130,14 @@ test('global server identity is stable across physical workspace aliases', async
     assert.equal(antigravityServerName(alias), antigravityServerName(workspace));
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
+
+test('global server identity matches the repository folder returned by native Git', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const { realpathSync } = await import('node:fs');
+  const root = mkdtempSync(join(tmpdir(), 'agy-git-root-'));
+  try {
+    execFileSync('git', ['init', root], { stdio: 'ignore' });
+    const gitRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], { cwd: root, encoding: 'utf8' }).trim();
+    assert.equal(antigravityServerName(root), antigravityServerName(gitRoot), JSON.stringify({ root, gitRoot, realpath: realpathSync(root), nativeRealpath: realpathSync.native(root) }));
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});

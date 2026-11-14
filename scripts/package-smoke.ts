@@ -5,6 +5,7 @@ import {
   readFileSync,
   writeFileSync,
   existsSync,
+  realpathSync,
   rmSync,
   cpSync,
 } from 'node:fs';
@@ -160,10 +161,16 @@ try {
   );
   const installed = run(process.execPath, [cli, ...base, '--yes']);
   assert.ok(installed.includes('tool connections verified'));
-  const globalServer = () =>
-    JSON.parse(readFileSync(antigravityConfig, 'utf8')).mcpServers[
-      antigravityServerName(workspace)
-    ];
+  const globalServer = () => {
+    const servers = JSON.parse(readFileSync(antigravityConfig, 'utf8')).mcpServers;
+    const expected = antigravityServerName(workspace);
+    const entry = servers[expected];
+    if (!entry && Object.keys(servers).some(name => name.startsWith('shared-memory-'))) throw new Error('Global server identity mismatch: ' + JSON.stringify({
+      workspace, realpath: realpathSync(workspace), nativeRealpath: realpathSync.native(workspace), expected,
+      registered: Object.entries(servers).map(([name, value]) => ({ name, workspace: (value as any).env?.MEMORY_WORKSPACE })),
+    }));
+    return entry;
+  };
   assert.ok(globalServer().args[0].startsWith(home));
   const agHooks = JSON.parse(
     readFileSync(join(workspace, '.agents/hooks.json'), 'utf8'),

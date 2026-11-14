@@ -1,3 +1,4 @@
+import { canonicalWorkspace } from "./repository.ts";
 import { historyTimestamp } from "./history-time.ts";
 import { execFileSync } from "node:child_process";
 import { existsSync, realpathSync } from "node:fs";
@@ -45,7 +46,7 @@ export function findConversations(roots: string[], workspace?: string): Conversa
         const id = String(row.conversation_id);
         if (!/^[A-Za-z0-9_-]{1,128}$/.test(id)) continue;
         for (const directory of workspaces(String(row.workspace_uris))) {
-          if (workspace && resolve(directory) !== resolve(workspace) && (!expectedRepository || commonDirectory(directory) !== expectedRepository)) continue;
+          if (workspace && canonicalWorkspace(directory) !== canonicalWorkspace(workspace) && (!expectedRepository || commonDirectory(directory) !== expectedRepository)) continue;
           const conversation = { id, title: String(row.title), workspace: directory, root, modified: String(row.last_modified_time) };
           const key = id + ":" + directory;
           const previous = found.get(key);

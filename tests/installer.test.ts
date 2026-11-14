@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -163,7 +163,7 @@ test('Antigravity setup prepares a global MCP fragment with session selection an
     const first = readFileSync(fragment, 'utf8');
     const server = JSON.parse(first).mcpServers['shared-memory'];
     assert.equal(server.env.MEMORY_REPO, 'repo');
-    assert.equal(server.env.MEMORY_WORKSPACE, workspace);
+    assert.equal(server.env.MEMORY_WORKSPACE, realpathSync(workspace));
     assert.equal(server.env.MEMORY_SESSION_SELECTION, '1');
     assert.ok(existsSync(server.command));
     assert.ok(existsSync(server.args[0]));

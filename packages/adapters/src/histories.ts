@@ -1,3 +1,4 @@
+import { canonicalWorkspace } from './repository.ts';
 import { historyTimestamp as timestamp } from './history-time.ts';
 import { closeSync, existsSync, openSync, readSync, readdirSync, realpathSync, statSync } from 'node:fs';
 import { isAbsolute, join, relative, resolve } from 'node:path';
@@ -153,7 +154,7 @@ export function discoverHistories(options: { roots: HistoryRoots; workspace?: st
     return repositories.get(directory);
   };
   const expected = options.workspace ? common(options.workspace) : null;
-  const matches = (directory: string) => !options.workspace || resolve(directory) === resolve(options.workspace) || (!!expected && common(directory) === expected);
+  const matches = (directory: string) => !options.workspace || canonicalWorkspace(directory) === canonicalWorkspace(options.workspace) || (!!expected && common(directory) === expected);
   const found = new Map<string, Conversation>();
   const add = (conversations: Conversation[]) => {
     for (const conversation of conversations) {

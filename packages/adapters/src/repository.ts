@@ -1,3 +1,5 @@
+import { realpathSync } from "node:fs";
+import { resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 
@@ -39,4 +41,9 @@ export function resolveRepository(directory: string) {
         .digest("hex");
   }
   return { workspace, repoId };
+}
+
+/** Compare the physical folder across symlinks and native path spellings. */
+export function canonicalWorkspace(directory: string): string {
+  try { return realpathSync(directory); } catch { return resolve(directory); }
 }

@@ -84,3 +84,15 @@ test('an incomplete newer Codex index cannot hide supported older indexes or the
     assert.equal(chats.filter(c => c.client === 'claude').length, 1);
   } finally { rmSync(fixture.root, { recursive: true, force: true }); }
 });
+
+test('history discovery recognizes aliases of the same physical workspace without Git metadata', async () => {
+  const { symlinkSync } = await import('node:fs');
+  const fixture = historyFixture();
+  try {
+    const alias = join(fixture.root, 'project-alias');
+    symlinkSync(fixture.workspace, alias, process.platform === 'win32' ? 'junction' : 'dir');
+    const chats = discoverHistories({ roots: fixture.roots, workspace: alias, destination: 'claude' });
+    assert.deepEqual(chats.map(c => c.client), ['codex', 'antigravity']);
+    assert.ok(!chats.some(c => c.title.includes('PRIVATE')));
+  } finally { rmSync(fixture.root, { recursive: true, force: true }); }
+});

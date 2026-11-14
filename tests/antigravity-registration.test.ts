@@ -119,3 +119,14 @@ test('global Antigravity registration preserves opt-in conversation mode and ver
     await verifyAntigravity(opts);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
+
+test('global server identity is stable across physical workspace aliases', async () => {
+  const { symlinkSync, mkdirSync } = await import('node:fs');
+  const root = mkdtempSync(join(tmpdir(), 'agy-alias-'));
+  try {
+    const workspace = join(root, 'project'), alias = join(root, 'alias');
+    mkdirSync(workspace);
+    symlinkSync(workspace, alias, process.platform === 'win32' ? 'junction' : 'dir');
+    assert.equal(antigravityServerName(alias), antigravityServerName(workspace));
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});

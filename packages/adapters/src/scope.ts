@@ -9,7 +9,7 @@ export function resolveConnection(payload: Record<string, unknown>, env: NodeJS.
   const workspace = typeof payload.cwd === "string" ? payload.cwd :
     Array.isArray(workspacePaths) && workspacePaths.length === 1 && typeof workspacePaths[0] === "string"
       ? workspacePaths[0] : process.cwd();
-  if (env.MEMORY_WORKSPACE && realpathSync(workspace) !== realpathSync(env.MEMORY_WORKSPACE)) {
+  if (env.MEMORY_WORKSPACE && realpathSync.native(workspace) !== realpathSync.native(env.MEMORY_WORKSPACE)) {
     const commonGitDir = (cwd: string) => execFileSync("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], {
       cwd, encoding: "utf8", timeout: 2000, stdio: ["ignore", "pipe", "ignore"],
     }).trim();

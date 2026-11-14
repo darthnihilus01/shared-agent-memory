@@ -312,7 +312,7 @@ export function createMemoryServer(
         throw new Error(
           'Reconnect this project: the memory server has no bound workspace',
         );
-      const activeWorkspace = realpathSync(
+      const activeWorkspace = realpathSync.native(
         resolveConnection(
           { cwd: workspace ?? env.MEMORY_WORKSPACE ?? process.cwd() },
           env,

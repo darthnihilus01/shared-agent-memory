@@ -35,7 +35,7 @@ const object = (value: unknown): value is Record<string, unknown> => !!value && 
 
 function inside(root: string, path: string) {
   if (!existsSync(path)) return false;
-  const delta = relative(realpathSync(root), realpathSync(path));
+  const delta = relative(realpathSync.native(root), realpathSync.native(path));
   return delta !== '..' && !delta.startsWith('..' + (process.platform === 'win32' ? '\\' : '/')) && !isAbsolute(delta);
 }
 function files(directory: string, recursive = false): string[] {

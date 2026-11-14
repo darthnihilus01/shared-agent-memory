@@ -45,5 +45,5 @@ export function resolveRepository(directory: string) {
 
 /** Compare the physical folder across symlinks and native path spellings. */
 export function canonicalWorkspace(directory: string): string {
-  try { return realpathSync(directory); } catch { return resolve(directory); }
+  try { return realpathSync.native(directory); } catch { return resolve(directory); }
 }

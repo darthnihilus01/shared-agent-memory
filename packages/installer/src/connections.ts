@@ -136,7 +136,7 @@ export function readConnectionState(workspace: string): State {
 }
 
 export function planConnection(opts: ConnectionOptions): ConnectionPlan {
-  const workspace = realpathSync(opts.workspace),
+  const workspace = realpathSync.native(opts.workspace),
     app = resolve(opts.appRoot),
     node = opts.node ?? process.execPath;
   if (

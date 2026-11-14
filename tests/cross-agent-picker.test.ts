@@ -22,7 +22,7 @@ for (const [destination, expected] of [
     assert.equal(wrongProject.isError, true, 'A global connection for another project must not expose its histories');
     const result = await client.callTool({ name: 'choose_conversation', arguments: { sessionId: 'native-session', workspace: fixture.workspace } });
     assert.ok(!result.isError, JSON.stringify(result));
-    assert.equal((result.structuredContent as { workspace: string }).workspace, realpathSync(fixture.workspace));
+    assert.equal((result.structuredContent as { workspace: string }).workspace, realpathSync.native(fixture.workspace));
     const ui = (result.structuredContent as { presentation: string; nativeQuestion: { tool: string; arguments: { questions: unknown[] } } });
     assert.equal(ui.presentation, 'native_question');
     assert.equal(ui.nativeQuestion.tool, { antigravity: 'ask_question', codex: 'request_user_input_async', claude: 'AskUserQuestion' }[destination]);

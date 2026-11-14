@@ -74,7 +74,7 @@ export function importConversation(options: { conversation: Conversation; repoId
   let source = "transcript";
   let captured = 0;
   if (existsSync(transcript)) {
-    if (relative(realpathSync(conversation.root), realpathSync(transcript)).startsWith("..")) throw new Error("Transcript escapes the source data directory");
+    if (relative(realpathSync.native(conversation.root), realpathSync.native(transcript)).startsWith("..")) throw new Error("Transcript escapes the source data directory");
     let previousOffset = -1;
     for (;;) {
       const report = captureTranscript({ directory, client, scope, sessionId: conversation.id, path: transcript });

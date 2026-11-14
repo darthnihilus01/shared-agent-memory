@@ -8,7 +8,7 @@ Run commands from the memory product checkout with Node 24+ and dependencies ins
 npm run connect -- --client claude-code --workspace /path/to/repository
 ```
 
-This merges project MCP configuration, SessionStart/Stop hooks and the continue-chat skill while preserving unrelated settings. Start a fresh Claude Code session in the target project, log in and approve the project MCP connection. Invoke `/continue-chat`, select a conversation, and review the restored checkpoint before asking for implementation. Capture begins after selection. Hook execution depends on the client's trust settings.
+This merges project MCP configuration, SessionStart/Stop hooks and the knit skill while preserving unrelated settings. Start a fresh Claude Code session in the target project, log in and approve the project MCP connection. Invoke `/knit`, select a conversation, and review the restored checkpoint before asking for implementation. Capture begins after selection. Hook execution depends on the client's trust settings.
 
 ## Claude Desktop local MCP
 
@@ -54,7 +54,7 @@ Add the public MCP URL as a custom remote connector in the chosen client and com
 
 For ordinary chat clients, the flow is `start_session` → `choose_conversation` → explicit user selection → `get_context`. The server supplies instructions and returns the identifiers needed for later calls. A new chat must start a new session; another chat's selection is never chosen automatically. Session ownership is enforced for remote authenticated users.
 
-When form elicitation is unavailable on the HTTP connection, `choose_conversation` returns a browser picker link. Open it, choose a chat, then return to the agent to retrieve context. Links expire after at most ten minutes and can be used once. The picker currently discovers local Antigravity conversations in the connected repository, including its linked worktrees. It does not browse arbitrary ChatGPT or Claude account history.
+When form elicitation is unavailable on the HTTP connection, `choose_conversation` returns a browser picker link. Open it, choose a chat, then return to the agent to retrieve context. Links expire after at most ten minutes and can be used once. The picker discovers local Claude Code, Codex and Antigravity histories in the connected repository, including its linked worktrees, newest first. Coding connections exclude the current agent. Remote web connectors can browse all three local sources, but do not browse remote ChatGPT or Claude account history.
 
 Coding hooks capture supported user/assistant text. Ordinary chat connectors cannot passively export every conversation turn through MCP: the agent must call `save_memory` to store useful checkpoints. Restored evidence can omit images, raw tool output and hidden reasoning; it must not be treated as fresh permission to edit files.
 

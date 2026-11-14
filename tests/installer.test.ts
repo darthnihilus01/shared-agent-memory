@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -119,7 +119,7 @@ test('upgrading to a different runtime rejects a user-extended managed hook grou
     settings.hooks.Stop[0].hooks.push({ type: 'command', command: 'keep-user-hook' });
     writeFileSync(path, JSON.stringify(settings));
     const app = join(workspace, 'new app');
-    for (const file of ['apps/server/src/main.ts', 'packages/adapters/src/cli.ts', 'skills/continue-chat/SKILL.md']) {
+    for (const file of ['apps/server/src/main.ts', 'packages/adapters/src/cli.ts', 'skills/knit/SKILL.md']) {
       const target = join(app, file); mkdirSync(join(target, '..'), { recursive: true });
       writeFileSync(target, file.endsWith('.md') ? readFileSync(join(process.cwd(), file)) : 'export {};');
     }
@@ -133,9 +133,62 @@ test('customized managed skill is never silently overwritten on setup', () => {
   try {
     const opts = { workspace, appRoot: process.cwd(), database: join(workspace, 'db'), repoId: 'repo', clients: ['claude-code'] };
     applyConnectionPlan(planConnection(opts));
-    const path = join(workspace, '.claude/skills/continue-chat/SKILL.md');
+    const path = join(workspace, '.claude/skills/knit/SKILL.md');
     writeFileSync(path, readFileSync(path, 'utf8') + '\nUser customization\n');
     assert.throws(() => planConnection(opts), /modified skill conflict/i);
     assert.ok(readFileSync(path, 'utf8').includes('User customization'));
   } finally { rmSync(workspace, { recursive: true, force: true }); }
+});
+
+test('Antigravity-only setup installs the knit slash skill and removes it on uninstall', () => {
+  const workspace = mkdtempSync(join(tmpdir(), 'antigravity-knit-'));
+  try {
+    const opts = { workspace, appRoot: process.cwd(), database: join(workspace, 'db'), repoId: 'repo', clients: ['antigravity'] };
+    applyConnectionPlan(planConnection(opts));
+    const path = join(workspace, '.agents/skills/knit/SKILL.md');
+    assert.ok(existsSync(path), 'Antigravity setup must install /knit without requiring Codex');
+    assert.match(readFileSync(path, 'utf8'), /name: knit/);
+    applyConnectionPlan(planConnection(opts));
+    uninstallConnections(workspace);
+    assert.equal(existsSync(path), false);
+  } finally { rmSync(workspace, { recursive: true, force: true }); }
+});
+
+test('Antigravity setup prepares a global MCP fragment with session selection and manages its lifecycle', () => {
+  const workspace = mkdtempSync(join(tmpdir(), 'antigravity-mcp-'));
+  try {
+    const opts = { workspace, appRoot: process.cwd(), database: join(workspace, 'db'), repoId: 'repo', clients: ['antigravity'] };
+    const fragment = join(workspace, '.memory/connectors/antigravity.json');
+    applyConnectionPlan(planConnection(opts));
+    const first = readFileSync(fragment, 'utf8');
+    const server = JSON.parse(first).mcpServers['shared-memory'];
+    assert.equal(server.env.MEMORY_REPO, 'repo');
+    assert.equal(server.env.MEMORY_WORKSPACE, realpathSync.native(workspace));
+    assert.equal(server.env.MEMORY_SESSION_SELECTION, '1');
+    assert.ok(existsSync(server.command));
+    assert.ok(existsSync(server.args[0]));
+    applyConnectionPlan(planConnection(opts));
+    assert.equal(readFileSync(fragment, 'utf8'), first);
+    uninstallConnections(workspace);
+    assert.equal(existsSync(fragment), false);
+  } finally { rmSync(workspace, { recursive: true, force: true }); }
+});
+
+test('rollback can bind a compatible older runtime that ships only continue-chat', () => {
+  const root = mkdtempSync(join(tmpdir(), 'legacy-runtime-skill-'));
+  try {
+    const workspace = join(root, 'project'), app = join(root, 'beta3');
+    mkdirSync(workspace);
+    execFileSync('git', ['init', workspace], { stdio: 'ignore' });
+    const opts = { workspace, appRoot: process.cwd(), database: join(root, 'db'), repoId: 'repo', clients: ['codex', 'claude-code', 'antigravity'] };
+    applyConnectionPlan(planConnection(opts));
+    for (const file of ['apps/server/src/main.js', 'packages/adapters/src/cli.js', 'skills/continue-chat/SKILL.md']) {
+      const target = join(app, file); mkdirSync(join(target, '..'), { recursive: true });
+      writeFileSync(target, file.endsWith('.md') ? 'Older runtime continuation instructions' : 'export {};');
+    }
+    applyConnectionPlan(planConnection({ ...opts, appRoot: app }));
+    assert.equal(readFileSync(join(workspace, '.agents/skills/continue-chat/SKILL.md'), 'utf8'), 'Older runtime continuation instructions');
+    assert.equal(readFileSync(join(workspace, '.claude/skills/continue-chat/SKILL.md'), 'utf8'), 'Older runtime continuation instructions');
+    assert.ok(JSON.parse(readFileSync(join(workspace, '.mcp.json'), 'utf8')).mcpServers['shared-memory'].args[0].startsWith(app));
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });

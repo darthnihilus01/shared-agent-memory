@@ -28,7 +28,7 @@ try {
     for (const path of Object.keys(plan.changes)) console.log("merge " + join(workspace, path));
     if (!values.preview) applyConnectionPlan(plan);
     console.log(client === "claude-code"
-      ? "Start a fresh Claude Code session in this workspace, approve its MCP connection if prompted, and use /continue-chat."
+      ? "Start a fresh Claude Code session in this workspace, approve its MCP connection if prompted, and use /knit."
       : "Merge the generated .memory/connectors/claude-desktop.json entry into Claude Desktop's local MCP configuration, restart Claude Desktop, then call start_session and choose_conversation.");
   } else {
     const publicUrl = values["public-url"] ? secureUrl(values["public-url"], "Public URL") : null;

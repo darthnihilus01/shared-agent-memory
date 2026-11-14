@@ -63,3 +63,9 @@ Knitt is licensed under the [Apache License 2.0](LICENSE).
 ## Local conversation memory preview
 
 Opt-in `setup --capture-new-sessions` adds independent coding-session histories, explicit continuation links and cited checkpoint-first recall. Existing connections remain compatible. See [local memory setup and recovery](docs/clients/local-agent-memory.md).
+
+## Cross-agent continuation
+
+Use `/knit` to choose one of the four most recent chats from other coding agents in the current project. The native picker preserves explicit selection and returns bounded context with acceptance, avoiding an extra context tool call. Search by title to find older chats.
+
+See [the usage guide](docs/usage.md) for setup and supported clients. Existing opt-in local memory, checkpoints and evidence retrieval remain available through `/continue-chat`; that mode keeps its capability-scoped picker and context flow.

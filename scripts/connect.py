@@ -75,19 +75,22 @@ try:
 
         mcp = json_file(".agents/mcp_config.json")
         servers = mcp.setdefault("mcpServers", {})
-        connection = {"command": node, "args": [server], "cwd": str(workspace), "env": {"MEMORY_DB": database, "MEMORY_REPO": args.repo_id, "MEMORY_WORKSPACE": str(workspace), **({"MEMORY_SESSION_SELECTION": "1"} if args.session_selection else {}), **({"MEMORY_FEATURE": args.feature_id} if args.feature_id else {})}}
+        connection = {"command": node, "args": [server], "cwd": str(workspace), "env": {"MEMORY_CLIENT": "antigravity", "MEMORY_PICKER_MODE": "native_question", "MEMORY_DB": database, "MEMORY_REPO": args.repo_id, "MEMORY_WORKSPACE": str(workspace), **({"MEMORY_SESSION_SELECTION": "1"} if args.session_selection else {}), **({"MEMORY_FEATURE": args.feature_id} if args.feature_id else {})}}
         if "shared-memory" in servers and servers["shared-memory"].get("args") != [server]:
             raise ValueError("An unrelated Antigravity shared-memory server already exists")
         servers["shared-memory"] = connection
         changes[".agents/mcp_config.json"] = dump(mcp)
+        changes[".memory/connectors/antigravity.json"] = dump({"mcpServers": {"shared-memory": connection}})
 
-    if args.client in ["both", "codex"]:
-        skill_path = ".agents/skills/continue-chat/SKILL.md"
-        skill_text = (app / "skills/continue-chat/SKILL.md").read_text()
+    if args.client in ["both", "codex", "antigravity"]:
+        skill_path = ".agents/skills/knit/SKILL.md"
+        skill_text = (app / "skills/knit/SKILL.md").read_text()
         current_skill = existing(skill_path)
         if current_skill and "<!-- shared-agent-memory -->" not in current_skill:
-            raise ValueError("An unrelated continue-chat skill already exists")
+            raise ValueError("An unrelated knit skill already exists")
         changes[skill_path] = skill_text
+
+    if args.client in ["both", "codex"]:
         codex = json_file(".codex/hooks.json")
         hooks = codex.setdefault("hooks", {})
         for event, action in [("SessionStart", "recall"), ("Stop", "capture")]:
@@ -113,7 +116,7 @@ try:
             + "command = " + json.dumps(node) + "\n"
             + "args = " + json.dumps([server]) + "\n"
             + "cwd = " + json.dumps(str(workspace)) + "\n"
-            + "env = { MEMORY_DB = " + json.dumps(database) + ", MEMORY_REPO = " + json.dumps(args.repo_id)
+            + 'env = { MEMORY_CLIENT = "codex", MEMORY_DB = ' + json.dumps(database) + ", MEMORY_REPO = " + json.dumps(args.repo_id)
             + ", MEMORY_WORKSPACE = " + json.dumps(str(workspace))
             + (", MEMORY_FEATURE = " + json.dumps(args.feature_id) if args.feature_id else "")
             + (", MEMORY_SESSION_SELECTION = \"1\"" if args.session_selection else "") + " }\n"
@@ -130,7 +133,7 @@ try:
             raise ValueError("An unrelated Claude shared-memory server already exists")
         servers["shared-memory"] = {
             "command": node, "args": [server],
-            "env": {"MEMORY_DB": database, "MEMORY_REPO": args.repo_id, "MEMORY_WORKSPACE": str(workspace),
+            "env": {"MEMORY_CLIENT": "claude", "MEMORY_DB": database, "MEMORY_REPO": args.repo_id, "MEMORY_WORKSPACE": str(workspace),
                     **({"MEMORY_SESSION_SELECTION": "1"} if args.session_selection else {}),
                     **({"MEMORY_FEATURE": args.feature_id} if args.feature_id else {})},
         }
@@ -146,18 +149,21 @@ try:
             groups.append({"hooks": [handler("claude", action)]})
             hooks[event] = groups
         changes[".claude/settings.local.json"] = dump(settings)
-        skill_path = ".claude/skills/continue-chat/SKILL.md"
+        skill_path = ".claude/skills/knit/SKILL.md"
         if existing(skill_path) and "<!-- shared-agent-memory -->" not in existing(skill_path):
-            raise ValueError("An unrelated Claude continue-chat skill already exists")
-        changes[skill_path] = (app / "skills/continue-chat/SKILL.md").read_text()
+            raise ValueError("An unrelated Claude knit skill already exists")
+        changes[skill_path] = (app / "skills/knit/SKILL.md").read_text()
 
     if args.client == "claude-desktop":
         name = "shared-memory-" + hashlib.sha256(args.repo_id.encode()).hexdigest()[:8]
         changes[".memory/connectors/claude-desktop.json"] = dump({"mcpServers": {name: {
             "command": node, "args": [server],
-            "env": {"MEMORY_DB": database, "MEMORY_REPO": args.repo_id, "MEMORY_WORKSPACE": str(workspace),
+            "env": {"MEMORY_CLIENT": "claude", "MEMORY_DB": database, "MEMORY_REPO": args.repo_id, "MEMORY_WORKSPACE": str(workspace),
                     "MEMORY_SESSION_SELECTION": "1", "MEMORY_CHAT_CLIENT": "claude-desktop"},
         }}})
+
+    if args.client in ["both", "antigravity"]:
+        print("Antigravity: merge .memory/connectors/antigravity.json into ~/.gemini/config/mcp_config.json, then restart. This connection is bound to this project.")
 
     for relative, content in changes.items():
         print(("update " if existing(relative) != content else "unchanged ") + str(workspace / relative))

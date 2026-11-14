@@ -22,7 +22,7 @@ test("native user picker keeps concurrent sessions separate and cancellation imp
     writeFileSync(join(path, "transcript.jsonl"), JSON.stringify({ type: "PLANNER_RESPONSE", content: "Decision from chat " + id }) + "\n");
   }
   index.close();
-  const env = { ...process.env, MEMORY_DB: join(root, "events.sqlite"), MEMORY_REPO: "repo", MEMORY_SESSION_SELECTION: "1", MEMORY_WORKSPACE: workspace, MEMORY_SOURCE_ROOTS: JSON.stringify([root]) };
+  const env = { ...process.env, MEMORY_DB: join(root, "events.sqlite"), MEMORY_REPO: "repo", MEMORY_SESSION_SELECTION: "1", MEMORY_CLIENT: "codex", MEMORY_WORKSPACE: workspace, MEMORY_SOURCE_ROOTS: JSON.stringify([root]) };
   delete (env as Record<string, string | undefined>).NODE_TEST_CONTEXT;
   const client = new Client({ name: "user-picker-test", version: "1" }, { capabilities: { elicitation: { form: {} } } });
   const choices = ["1", "0", "cancel"];
@@ -39,7 +39,7 @@ test("native user picker keeps concurrent sessions separate and cancellation imp
     const before = await client.callTool({ name: "get_context", arguments: { repoId: "repo", sessionId: "session-a" } });
     assert.equal(before.isError, true);
     for (const sessionId of ["session-a", "session-b"]) {
-      const selected = await client.callTool({ name: "choose_conversation", arguments: { sessionId } });
+      const selected = await client.callTool({ name: "choose_conversation", arguments: { sessionId, workspace } });
       assert.ok(!selected.isError, JSON.stringify(selected));
     }
     const a = await client.callTool({ name: "get_context", arguments: { repoId: "repo", sessionId: "session-a" } });
@@ -56,7 +56,7 @@ test("native user picker keeps concurrent sessions separate and cancellation imp
     assert.equal(forbiddenEvidence.isError, true);
     const wrong = await client.callTool({ name: "get_context", arguments: { repoId: "repo", sessionId: "session-a", featureId: "antigravity:a" } });
     assert.equal(wrong.isError, true);
-    const cancelled = await client.callTool({ name: "choose_conversation", arguments: { sessionId: "session-c" } });
+    const cancelled = await client.callTool({ name: "choose_conversation", arguments: { sessionId: "session-c", workspace } });
     assert.deepEqual(cancelled.structuredContent, { selected: false, selectionRequired: true });
     const unselected = await client.callTool({ name: "get_context", arguments: { repoId: "repo", sessionId: "session-c" } });
     assert.equal(unselected.isError, true);
@@ -71,7 +71,7 @@ test("startup requires a picker until a choice is bound to the native session", 
   execFileSync("git", ["init", "--initial-branch=main", root], { stdio: "ignore" });
   const env = {
     ...process.env, MEMORY_DB: join(root, "events.sqlite"), MEMORY_REPO: "repo",
-    MEMORY_SESSION_SELECTION: "1", MEMORY_WORKSPACE: root,
+    MEMORY_SESSION_SELECTION: "1", MEMORY_CLIENT: "codex", MEMORY_WORKSPACE: root,
   };
   delete (env as Record<string, string | undefined>).NODE_TEST_CONTEXT;
   const invoke = (session: string, launch?: string) => spawnSync(process.execPath, [resolve("packages/adapters/src/cli.ts"), "recall", "codex"], {

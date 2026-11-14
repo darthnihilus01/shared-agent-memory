@@ -70,7 +70,7 @@ export function createGateway(options: {
     if (typeof ownerId !== "string" || !req.auth?.expiresAt) { res.status(401).json({ error: "Authenticated identity required" }); return; }
     const memory = createMemoryServer({
       MEMORY_DB: options.database, MEMORY_REPO: options.repoId, MEMORY_WORKSPACE: options.workspace,
-      MEMORY_SESSION_SELECTION: "1",
+      MEMORY_SESSION_SELECTION: "1", MEMORY_CLIENT: "web",
       ...(options.sourceRoots ? { MEMORY_SOURCE_ROOTS: JSON.stringify(options.sourceRoots) } : {}),
     }, {
       ownerId, canWrite: req.auth.scopes.includes("memory:write"),

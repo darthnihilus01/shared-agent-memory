@@ -1,3 +1,4 @@
+import { realpathSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import type { Scope } from "./hooks.ts";
 
@@ -8,12 +9,14 @@ export function resolveConnection(payload: Record<string, unknown>, env: NodeJS.
   const workspace = typeof payload.cwd === "string" ? payload.cwd :
     Array.isArray(workspacePaths) && workspacePaths.length === 1 && typeof workspacePaths[0] === "string"
       ? workspacePaths[0] : process.cwd();
-  if (env.MEMORY_WORKSPACE) {
+  if (env.MEMORY_WORKSPACE && realpathSync.native(workspace) !== realpathSync.native(env.MEMORY_WORKSPACE)) {
     const commonGitDir = (cwd: string) => execFileSync("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], {
       cwd, encoding: "utf8", timeout: 2000, stdio: ["ignore", "pipe", "ignore"],
     }).trim();
-    if (commonGitDir(workspace) !== commonGitDir(env.MEMORY_WORKSPACE)) {
-      throw new Error("Wrong workspace. Open " + env.MEMORY_WORKSPACE + " to continue this handoff. No memory was recalled or captured.");
+    let matches = false;
+    try { matches = commonGitDir(workspace) === commonGitDir(env.MEMORY_WORKSPACE); } catch { /* Non-Git folders can only match by their canonical path. */ }
+    if (!matches) {
+      throw new Error("Wrong workspace. This memory connection belongs to " + env.MEMORY_WORKSPACE + ". Use the connection for the current project " + workspace + ". No memory was recalled or captured.");
     }
   }
   return { repoId, workspace };

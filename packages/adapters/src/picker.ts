@@ -1,13 +1,14 @@
 import type { Conversation } from "./handoff.ts";
 
-export function conversationLabel(conversation: Conversation): string {
-  return [conversation.title || "(untitled)", conversation.workspace, conversation.modified]
+export function conversationLabel(conversation: Omit<Conversation, "client"> & { client?: string }): string {
+  const name = conversation.client ? { codex: "Codex", claude: "Claude", antigravity: "Antigravity" }[conversation.client as "codex" | "claude" | "antigravity"] : undefined;
+  return [(name ? "[" + name + "] " : "") + (conversation.title || "(untitled)"), conversation.workspace, conversation.modified]
     .join(" · ").replace(/[\x00-\x1f\x7f]/g, " ");
 }
 
-export async function pickConversation(conversations: Conversation[], io: {
+export async function pickConversation<T extends Omit<Conversation, "client"> & { client?: string }>(conversations: T[], io: {
   ask: (prompt: string) => Promise<string>; write: (text: string) => void;
-}): Promise<Conversation | null> {
+}): Promise<T | null> {
   let query = "";
   let page = 0;
   for (;;) {

@@ -39,6 +39,7 @@ function textBlocks(value: unknown): string {
 }
 
 function messageText(row: Record<string, any>): string | null {
+  if (row.isSidechain === true) return null;
   if (row.type === "USER_INPUT" && typeof row.content === "string") {
     const request = row.content.match(
       /<USER_REQUEST>([\s\S]*?)<\/USER_REQUEST>/,

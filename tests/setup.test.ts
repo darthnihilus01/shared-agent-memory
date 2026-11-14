@@ -31,8 +31,8 @@ test("connection install preserves settings, backs up changes, and is repeatable
     const cx = JSON.parse(before);
     assert.equal(cx.hooks.Stop.length, 2);
     assert.ok(existsSync(join(workspace, ".memory/connection-backup.json")));
-    const command = readFileSync(join(workspace, ".agents/skills/continue-chat/SKILL.md"), "utf8");
-    assert.ok(command.includes("name: continue-chat"));
+    const command = readFileSync(join(workspace, ".agents/skills/knit/SKILL.md"), "utf8");
+    assert.ok(command.includes("name: knit"));
     assert.ok(command.includes("choose_conversation"));
   } finally { rmSync(workspace, { recursive: true, force: true }); }
 });
@@ -95,7 +95,7 @@ test("Claude Code setup merges MCP, hooks and slash skill without changing exist
     const settings = JSON.parse(readFileSync(join(workspace, ".claude/settings.local.json"), "utf8"));
     assert.deepEqual(settings.permissions.allow, ["Read"]);
     assert.equal(settings.hooks.Stop.length, 2);
-    assert.ok(readFileSync(join(workspace, ".claude/skills/continue-chat/SKILL.md"), "utf8").includes("choose_conversation"));
+    assert.ok(readFileSync(join(workspace, ".claude/skills/knit/SKILL.md"), "utf8").includes("choose_conversation"));
   } finally { rmSync(workspace, { recursive: true, force: true }); }
 });
 
@@ -113,4 +113,18 @@ test("generated connector files stay excluded in linked Git worktrees", async ()
     assert.equal(result.status, 0, result.stderr);
     assert.equal(spawnSync("git", ["-C", worktree, "check-ignore", ".mcp.json"], { encoding: "utf8" }).status, 0);
   } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test("legacy Antigravity-only setup installs the knit slash skill", () => {
+  const workspace = mkdtempSync(join(tmpdir(), "antigravity-knit-legacy-"));
+  try {
+    const result = spawnSync(process.platform === "win32" ? "python" : "python3", [
+      resolve("scripts/connect.py"), "--workspace", workspace, "--node", process.execPath,
+      "--repo-id", "repo", "--client", "antigravity", "--session-selection", "--apply",
+    ], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    const path = join(workspace, ".agents/skills/knit/SKILL.md");
+    assert.ok(existsSync(path), "Antigravity setup must install /knit without requiring Codex");
+    assert.match(readFileSync(path, "utf8"), /name: knit/);
+  } finally { rmSync(workspace, { recursive: true, force: true }); }
 });

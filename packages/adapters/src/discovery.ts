@@ -7,7 +7,7 @@ import { captureTranscript } from "./transcript.ts";
 import { flush } from "./hooks.ts";
 import { discoverJsonl } from "./providers/jsonl.ts";
 import type { Conversation as LegacyConversation } from "./handoff.ts";
-export type DiscoveredConversation = LegacyConversation & {
+export type DiscoveredConversation = Omit<LegacyConversation, "client"> & {
   client: string;
   sourceId: string;
   storedId?: string;
@@ -118,7 +118,7 @@ export function importDiscovered(
   );
   if (source.client === "antigravity") {
     const report = importConversation({
-      conversation: { ...source, id: source.sourceId },
+      conversation: { ...source, id: source.sourceId, client: "antigravity" },
       repoId,
       directory: queue,
       store,
